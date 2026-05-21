@@ -6,7 +6,6 @@ import LatestTrips from '../components/LatestTrips.astro';
 import MapTeaser from '../components/MapTeaser.astro';
 import Countries from '../components/Countries.astro';
 import About from '../components/About.astro';
-import Newsletter from '../components/Newsletter.astro';
 
 import { FALLBACK_TRIPS, FALLBACK_COUNTRIES, FALLBACK_STATS, FALLBACK_HERO } from '../lib/fallback';
 import { getLatestTrips, getAllCountries, getSiteSettings, getAuthor, assetUrl } from '../lib/contentful';
@@ -78,5 +77,4 @@ const hero = settings ? {
     signature={author?.fields?.signature as string | undefined}
     avatar={author?.fields?.avatar ? assetUrl(author.fields.avatar, { w: 800 }) : undefined}
   />
-  <Newsletter />
 </Layout>

@@ -6,9 +6,9 @@ interface Props {
   avatar?: string;
 }
 const {
-  name = 'Ania',
+  name = 'Julka i Radek',
   bio = [
-    'Od pięciu lat zapisuję każdą podróż — bilety, ślady GPX, ceny chleba na bazarach. Tu spisuję to wszystko zamiast gubić w notatkach telefonu.',
+    'Od pięciu lat zapisujemy każdą podróż — bilety, ślady GPX, ceny chleba na bazarach. Tu spisujemy to wszystko zamiast gubić w notatkach telefonu.',
     'Najczęściej Bałkany, Kaukaz i północ. Najchętniej autobusem, marszrutką, stopem.',
   ],
   signature = '— do zobaczenia w drodze',
@@ -19,8 +19,8 @@ const {
   <div class="grid grid-cols-1 md:grid-cols-2 gap-20 max-w-[1300px] mx-auto items-center">
     <div class="aspect-[4/5] bg-cover bg-center sepia-[0.15] saturate-[0.9]" style={`background-image: url('${avatar}');`} data-reveal></div>
     <div data-reveal>
-      <div class="eyebrow mb-3">o mnie</div>
-      <h2 class="font-serif italic text-5xl mb-6 leading-tight">cześć, jestem <span class="text-rust">{name}</span></h2>
+      <div class="eyebrow mb-3">o nas</div>
+      <h2 class="font-serif italic text-5xl mb-6 leading-tight">cześć, jesteśmy <span class="text-rust">{name}</span></h2>
       {bio.map(p => <p class="text-ink-soft text-lg mb-5">{p}</p>)}
       <p class="font-serif italic text-rust text-xl mt-8">{signature}</p>
     </div>

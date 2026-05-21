@@ -71,7 +71,7 @@ export default function WorldMap({ trips, maptilerKey }: { trips: MapTrip[]; map
     <div className="relative w-full h-[calc(100vh-6rem)] min-h-[500px]">
       <div ref={containerRef} className="w-full h-full" />
       {active && (
-        <div className="absolute bottom-6 left-6 right-6 md:left-auto md:w-[360px] bg-bg shadow-2xl border border-ink/10 p-5 z-10">
+        <div className="fixed bottom-6 left-6 right-6 md:left-auto md:right-6 md:w-[360px] bg-bg shadow-2xl border border-ink/10 p-5 z-40">
           <button onClick={() => setActive(null)} className="absolute top-3 right-3 text-ink-soft hover:text-rust text-xl leading-none" aria-label="zamknij">×</button>
           {active.cover && <img src={active.cover} alt="" className="w-full aspect-video object-cover mb-4 sepia-[0.1]" />}
           <div className="text-xs tracking-[0.15em] uppercase text-linen mb-2">{active.country} · {active.region}</div>
