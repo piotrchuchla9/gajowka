@@ -1,0 +1,37 @@
+---
+import type { FallbackTrip } from '../lib/fallback';
+
+interface Props {
+  trips: FallbackTrip[];
+}
+const { trips } = Astro.props;
+
+const offsets = ['mt-0', 'md:mt-16', 'md:mt-6'];
+const aspects = ['aspect-[3/4]', 'aspect-[3/3.5]', 'aspect-[3/4.2]'];
+
+const fmtDate = (iso: string) => {
+  const d = new Date(iso);
+  return d.toLocaleDateString('pl-PL', { month: '2-digit', year: 'numeric' });
+};
+---
+<section id="latest" class="container-edge py-32 relative z-10">
+  <div class="eyebrow mb-3" data-reveal>najnowsze</div>
+  <h2 class="section-title mb-16" data-reveal>prosto <span class="italic text-moss">z drogi</span></h2>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+    {trips.slice(0, 3).map((t, i) => (
+      <a href={`/podroze/${t.slug}`} class={`group block ${offsets[i]}`} data-reveal>
+        <div class={`w-full ${aspects[i]} mb-6 overflow-hidden bg-cover bg-center sepia-[0.1] saturate-[0.9] group-hover:sepia-0 group-hover:saturate-100 group-hover:scale-[1.02] transition-all duration-500`} style={`background-image: url('${t.cover}');`}></div>
+        <div class="flex gap-4 text-xs tracking-[0.15em] uppercase text-linen mb-3">
+          <span>{t.country}</span>
+          <span>·</span>
+          <span>{t.region}</span>
+          <span>·</span>
+          <span>{fmtDate(t.date)}</span>
+        </div>
+        <h3 class="font-serif text-2xl leading-tight mb-2 group-hover:text-rust transition-colors">{t.title}</h3>
+        <p class="text-ink-soft text-base">{t.excerpt}</p>
+      </a>
+    ))}
+  </div>
+</section>

@@ -1,0 +1,26 @@
+---
+import MapMini from './MapMini';
+import type { FallbackTrip } from '../lib/fallback';
+
+interface Props {
+  trips: FallbackTrip[];
+}
+const { trips } = Astro.props;
+const pins = trips.map(t => ({ lat: t.pin[0], lng: t.pin[1] })).filter(p => p.lat && p.lng);
+const maptilerKey = import.meta.env.PUBLIC_MAPTILER_KEY || '';
+---
+<section id="map-teaser" class="bg-bg-2 py-32 px-6 text-center relative z-10">
+  <div class="eyebrow mb-3" data-reveal>odwiedzone</div>
+  <h2 class="section-title mx-auto text-center mb-12" data-reveal>mapa <span class="italic text-moss">wszystkich tras</span></h2>
+
+  <a href="/mapa" class="block max-w-[1200px] mx-auto aspect-[16/9] border border-ink/10 relative overflow-hidden group sepia-[0.1] hover:sepia-0 transition-all" data-reveal>
+    <div class="absolute inset-0 pointer-events-none">
+      <MapMini client:visible pins={pins} maptilerKey={maptilerKey} />
+    </div>
+    <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+      <span class="font-serif italic text-2xl text-ink-soft bg-bg/90 px-8 py-4 group-hover:bg-rust group-hover:text-bg transition-colors">
+        otwórz pełną mapę →
+      </span>
+    </div>
+  </a>
+</section>

@@ -1,0 +1,155 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import TripCard from '../../components/TripCard.astro';
+import { getAllTrips, getTripBySlug, assetUrl } from '../../lib/contentful';
+import { FALLBACK_TRIPS } from '../../lib/fallback';
+import { documentToHtmlString } from '@contentful/rich-text-html-renderer';
+
+export async function getStaticPaths() {
+  const cf = await getAllTrips();
+  const fromCf = (cf.items || []).map((t: any) => ({ params: { slug: t.fields.slug as string } }));
+  const fromFb = FALLBACK_TRIPS.map(t => ({ params: { slug: t.slug } }));
+  const uniq = new Map<string, { params: { slug: string } }>();
+  [...fromCf, ...fromFb].forEach(p => uniq.set(p.params.slug, p));
+  return Array.from(uniq.values());
+}
+
+const { slug } = Astro.params;
+const cfTrip: any = await getTripBySlug(slug!);
+const fbTrip = FALLBACK_TRIPS.find(t => t.slug === slug);
+
+const title = cfTrip?.fields?.title || fbTrip?.title || slug!;
+const cover = cfTrip?.fields?.coverImage ? assetUrl(cfTrip.fields.coverImage, { w: 2400 }) : fbTrip?.cover || '';
+const dateStart = cfTrip?.fields?.dateStart || fbTrip?.date;
+const dateEnd = cfTrip?.fields?.dateEnd;
+const distanceKm = cfTrip?.fields?.distanceKm ?? fbTrip?.distanceKm;
+const costTotal = cfTrip?.fields?.costTotal ?? fbTrip?.costTotal;
+const costBreakdown = cfTrip?.fields?.costBreakdown;
+const tags = cfTrip?.fields?.tags || fbTrip?.tags || [];
+const excerpt = cfTrip?.fields?.excerpt || fbTrip?.excerpt;
+const gallery = (cfTrip?.fields?.gallery || []).map((g: any) => assetUrl(g, { w: 1600 }));
+
+const regionName = cfTrip?.fields?.region?.fields?.name || fbTrip?.region;
+const regionSlug = cfTrip?.fields?.region?.fields?.slug || fbTrip?.regionSlug;
+const countryName = cfTrip?.fields?.region?.fields?.country?.fields?.name || fbTrip?.country;
+const countrySlug = cfTrip?.fields?.region?.fields?.country?.fields?.slug || fbTrip?.countrySlug;
+
+const bodyHtml = cfTrip?.fields?.body ? documentToHtmlString(cfTrip.fields.body) : '';
+const costBreakdownEntries: [string, number][] = costBreakdown
+  ? Object.entries(costBreakdown as Record<string, number>)
+  : [];
+
+const fmtRange = () => {
+  if (!dateStart) return '';
+  const s = new Date(dateStart).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' });
+  if (!dateEnd) return s;
+  const e = new Date(dateEnd).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' });
+  return `${s} – ${e}`;
+};
+
+// Related: from same country, not current
+const allTrips = await getAllTrips();
+const related = ((allTrips.items?.length ? allTrips.items.map((t: any) => ({
+  title: t.fields.title, slug: t.fields.slug, excerpt: t.fields.excerpt,
+  cover: assetUrl(t.fields.coverImage, { w: 800 }),
+  country: t.fields.region?.fields?.country?.fields?.name,
+  countrySlug: t.fields.region?.fields?.country?.fields?.slug,
+  region: t.fields.region?.fields?.name, date: t.fields.dateStart,
+})) : FALLBACK_TRIPS) as any[])
+  .filter(t => t.slug !== slug && t.countrySlug === countrySlug)
+  .slice(0, 3);
+---
+<Layout title={title} description={excerpt} ogImage={cover}>
+  <article>
+    <section class="relative h-[80vh] overflow-hidden flex items-end pb-20">
+      {cover && <div class="absolute inset-0 bg-cover bg-center brightness-[0.6] sepia-[0.1] animate-kenburns" style={`background-image: url('${cover}');`}></div>}
+      <div class="container-edge relative z-10 text-bg max-w-4xl">
+        <div class="flex flex-wrap gap-3 text-xs tracking-[0.15em] uppercase mb-6 fade-up-1">
+          {countryName && <a href={`/${countrySlug}`} class="hover:text-accent">{countryName}</a>}
+          {regionName && <><span>·</span><a href={`/${countrySlug}/${regionSlug}`} class="hover:text-accent">{regionName}</a></>}
+          {dateStart && <><span>·</span><span>{fmtRange()}</span></>}
+        </div>
+        <h1 class="font-serif italic leading-[1.05] fade-up-2" style="font-size: clamp(2.5rem, 7vw, 5.5rem);">{title}</h1>
+        {excerpt && <p class="mt-6 text-xl max-w-2xl fade-up-3 opacity-90">{excerpt}</p>}
+      </div>
+    </section>
+
+    <section class="container-edge py-20 grid lg:grid-cols-[1fr_280px] gap-16">
+      <div class="prose prose-lg max-w-none font-serif">
+        {bodyHtml
+          ? <div set:html={bodyHtml} />
+          : (
+            <div class="space-y-6 text-ink-soft font-sans">
+              <p>Treść wpisu z Contentful pojawi się tu po podłączeniu API. Na razie placeholder.</p>
+              <p>Pole <code>body</code> typu Rich Text — render przez <code>@contentful/rich-text-html-renderer</code>.</p>
+            </div>
+          )
+        }
+      </div>
+
+      <aside class="space-y-6 text-sm lg:sticky lg:top-24 self-start" data-reveal>
+        {distanceKm && <div><span class="eyebrow block mb-1">dystans</span><span class="font-serif text-2xl">{distanceKm} km</span></div>}
+        {costTotal && <div>
+          <span class="eyebrow block mb-1">koszt łącznie</span>
+          <span class="font-serif text-2xl">{costTotal.toLocaleString('pl-PL')} zł</span>
+        </div>}
+        {costBreakdown && (
+          <div>
+            <span class="eyebrow block mb-2">rozbicie kosztów</span>
+            <ul class="space-y-1">
+              {costBreakdownEntries.map(([k, v]) => (
+                <li class="flex justify-between border-b border-ink/10 py-1">
+                  <span class="capitalize">{k}</span>
+                  <span>{Number(v).toLocaleString('pl-PL')} zł</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {tags.length > 0 && (
+          <div>
+            <span class="eyebrow block mb-2">tagi</span>
+            <div class="flex flex-wrap gap-2">
+              {tags.map(t => <span class="px-3 py-1 border border-ink/15 text-xs">{t}</span>)}
+            </div>
+          </div>
+        )}
+      </aside>
+    </section>
+
+    {gallery.length > 0 && (
+      <section class="container-edge py-16">
+        <div class="eyebrow mb-3" data-reveal>galeria</div>
+        <h2 class="section-title mb-12" data-reveal>zdjęcia <span class="italic text-moss">z trasy</span></h2>
+        <div class="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
+          {gallery.map(g => (
+            <img src={g} alt="" loading="lazy" class="w-full block sepia-[0.05] hover:sepia-0 transition-all duration-500" data-reveal />
+          ))}
+        </div>
+      </section>
+    )}
+
+    {related.length > 0 && (
+      <section class="bg-bg-2 py-24 px-6 relative z-10">
+        <div class="container-edge">
+          <div class="eyebrow mb-3" data-reveal>czytaj dalej</div>
+          <h2 class="section-title mb-12" data-reveal>jeszcze <span class="italic text-moss">w {countryName}</span></h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+            {related.map((t: any) => <TripCard {...t} />)}
+          </div>
+        </div>
+      </section>
+    )}
+  </article>
+</Layout>
+
+<style is:global>
+  .prose h2 { @apply font-serif text-3xl md:text-4xl mt-12 mb-4 italic; }
+  .prose h3 { @apply font-serif text-2xl mt-10 mb-3; }
+  .prose p { @apply text-ink-soft text-lg leading-relaxed mb-5 font-sans; }
+  .prose a { @apply text-rust underline decoration-rust/30 hover:decoration-rust; }
+  .prose blockquote { @apply border-l-4 border-rust pl-6 italic text-ink-soft my-8 text-xl; }
+  .prose img { @apply w-full my-8 sepia-[0.05]; }
+  .prose ul { @apply list-disc list-outside pl-6 mb-5 text-ink-soft font-sans space-y-2; }
+  .prose ol { @apply list-decimal list-outside pl-6 mb-5 text-ink-soft font-sans space-y-2; }
+</style>

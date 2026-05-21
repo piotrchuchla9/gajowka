@@ -1,0 +1,102 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import TripCard from '../../components/TripCard.astro';
+import { getAllCountries, getCountryBySlug, getRegionsByCountry, getAllTrips, assetUrl } from '../../lib/contentful';
+import { FALLBACK_COUNTRIES, FALLBACK_TRIPS } from '../../lib/fallback';
+
+export async function getStaticPaths() {
+  const cf = await getAllCountries();
+  const fromCf = (cf.items || []).map((c: any) => ({ params: { country: c.fields.slug } }));
+  const fromFb = FALLBACK_COUNTRIES.map(c => ({ params: { country: c.slug } }));
+  const seen = new Set<string>();
+  return [...fromCf, ...fromFb].filter(p => {
+    if (seen.has(p.params.country)) return false;
+    seen.add(p.params.country); return true;
+  });
+}
+
+const { country: countrySlug } = Astro.params;
+
+const cfCountry = await getCountryBySlug(countrySlug!);
+const fbCountry = FALLBACK_COUNTRIES.find(c => c.slug === countrySlug);
+
+const name = (cfCountry?.fields?.name as string) || fbCountry?.name || countrySlug!;
+const flag = (cfCountry?.fields?.flagEmoji as string) || fbCountry?.flag || '';
+const description = (cfCountry?.fields?.description as string) || `Wszystkie podróże po: ${name}.`;
+const cover = cfCountry?.fields?.coverImage ? assetUrl(cfCountry.fields.coverImage, { w: 2000 }) : fbCountry?.cover || '';
+const currency = cfCountry?.fields?.currency as string | undefined;
+const bestSeason = cfCountry?.fields?.bestSeason as string | undefined;
+const visa = cfCountry?.fields?.visaInfo as string | undefined;
+
+let regions: { name: string; slug: string }[] = [];
+let trips: any[] = [];
+
+if (cfCountry) {
+  const r = await getRegionsByCountry(cfCountry.sys.id);
+  regions = (r.items || []).map((x: any) => ({ name: x.fields.name, slug: x.fields.slug }));
+  const t = await getAllTrips();
+  trips = (t.items || [])
+    .filter((tr: any) => tr.fields.region?.fields?.country?.sys?.id === cfCountry.sys.id)
+    .map((tr: any) => ({
+      title: tr.fields.title,
+      slug: tr.fields.slug,
+      excerpt: tr.fields.excerpt,
+      cover: assetUrl(tr.fields.coverImage, { w: 1000 }),
+      country: name,
+      region: tr.fields.region?.fields?.name,
+      date: tr.fields.dateStart,
+    }));
+} else {
+  trips = FALLBACK_TRIPS
+    .filter(t => t.countrySlug === countrySlug)
+    .map(t => ({ title: t.title, slug: t.slug, excerpt: t.excerpt, cover: t.cover, country: t.country, region: t.region, date: t.date }));
+  const seen = new Set<string>();
+  trips.forEach(t => seen.add(t.region));
+  regions = Array.from(seen).map(r => ({ name: r, slug: r.toLowerCase().replace(/\s+/g, '-') }));
+}
+---
+<Layout title={`${name}`}>
+  <section class="relative h-[60vh] overflow-hidden flex items-end pb-16">
+    {cover && <div class="absolute inset-0 bg-cover bg-center brightness-[0.65] sepia-[0.15]" style={`background-image: url('${cover}');`}></div>}
+    <div class="container-edge relative z-10 text-bg">
+      <div class="text-sm tracking-[0.3em] uppercase mb-4 fade-up-1">kraj {flag}</div>
+      <h1 class="font-serif italic text-7xl md:text-8xl leading-none fade-up-2">{name}</h1>
+    </div>
+  </section>
+
+  <section class="container-edge py-20 grid md:grid-cols-3 gap-12">
+    <div class="md:col-span-2">
+      <p class="text-lg text-ink-soft" data-reveal>{description}</p>
+    </div>
+    <aside class="space-y-4 text-sm" data-reveal>
+      {currency && <div><span class="eyebrow block mb-1">waluta</span>{currency}</div>}
+      {bestSeason && <div><span class="eyebrow block mb-1">najlepszy sezon</span>{bestSeason}</div>}
+      {visa && <div><span class="eyebrow block mb-1">wiza</span>{visa}</div>}
+    </aside>
+  </section>
+
+  {regions.length > 0 && (
+    <section class="container-edge py-8">
+      <div class="eyebrow mb-3" data-reveal>rejony</div>
+      <div class="flex flex-wrap gap-3" data-reveal>
+        {regions.map(r => (
+          <a href={`/${countrySlug}/${r.slug}`} class="px-5 py-2 border border-ink/15 hover:border-rust hover:text-rust font-serif italic transition-colors">
+            {r.name}
+          </a>
+        ))}
+      </div>
+    </section>
+  )}
+
+  <section class="container-edge py-20">
+    <div class="eyebrow mb-3" data-reveal>podróże</div>
+    <h2 class="section-title mb-12" data-reveal>w {name}</h2>
+    {trips.length === 0
+      ? <p class="text-ink-soft italic" data-reveal>Jeszcze brak opublikowanych podróży.</p>
+      : (
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+          {trips.map(t => <TripCard {...t} />)}
+        </div>
+      )}
+  </section>
+</Layout>

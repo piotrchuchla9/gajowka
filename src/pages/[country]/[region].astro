@@ -1,0 +1,90 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import TripCard from '../../components/TripCard.astro';
+import { getAllCountries, getRegionsByCountry, getCountryBySlug, getRegionBySlug, getTripsByRegion, assetUrl } from '../../lib/contentful';
+import { FALLBACK_TRIPS, FALLBACK_COUNTRIES } from '../../lib/fallback';
+
+export async function getStaticPaths() {
+  const cf = await getAllCountries();
+  const paths: { params: { country: string; region: string } }[] = [];
+
+  for (const c of cf.items || []) {
+    const slug = (c as any).fields.slug as string;
+    const regs = await getRegionsByCountry(c.sys.id);
+    for (const r of regs.items || []) {
+      paths.push({ params: { country: slug, region: (r as any).fields.slug as string } });
+    }
+  }
+
+  // Fallback paths
+  const seen = new Set<string>();
+  for (const t of FALLBACK_TRIPS) {
+    const key = `${t.countrySlug}/${t.regionSlug}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    paths.push({ params: { country: t.countrySlug, region: t.regionSlug } });
+  }
+
+  const uniq = new Map<string, typeof paths[0]>();
+  paths.forEach(p => uniq.set(`${p.params.country}/${p.params.region}`, p));
+  return Array.from(uniq.values());
+}
+
+const { country: countrySlug, region: regionSlug } = Astro.params;
+
+const cfRegion = await getRegionBySlug(regionSlug!);
+const cfCountry = await getCountryBySlug(countrySlug!);
+
+const fbCountry = FALLBACK_COUNTRIES.find(c => c.slug === countrySlug);
+const fbTrips = FALLBACK_TRIPS.filter(t => t.countrySlug === countrySlug && t.regionSlug === regionSlug);
+
+const countryName = (cfCountry?.fields?.name as string) || fbCountry?.name || countrySlug!;
+const regionName = (cfRegion?.fields?.name as string) || fbTrips[0]?.region || regionSlug!;
+const description = (cfRegion?.fields?.description as string) || '';
+const cover = cfRegion?.fields?.coverImage ? assetUrl(cfRegion.fields.coverImage, { w: 2000 })
+  : fbTrips[0]?.cover || fbCountry?.cover || '';
+
+let trips: any[] = [];
+if (cfRegion) {
+  const t = await getTripsByRegion(cfRegion.sys.id);
+  trips = (t.items || []).map((tr: any) => ({
+    title: tr.fields.title, slug: tr.fields.slug, excerpt: tr.fields.excerpt,
+    cover: assetUrl(tr.fields.coverImage, { w: 1000 }),
+    country: countryName, region: regionName, date: tr.fields.dateStart,
+  }));
+} else {
+  trips = fbTrips.map(t => ({
+    title: t.title, slug: t.slug, excerpt: t.excerpt, cover: t.cover,
+    country: t.country, region: t.region, date: t.date,
+  }));
+}
+---
+<Layout title={`${regionName}, ${countryName}`}>
+  <section class="relative h-[55vh] overflow-hidden flex items-end pb-16">
+    {cover && <div class="absolute inset-0 bg-cover bg-center brightness-[0.65] sepia-[0.15]" style={`background-image: url('${cover}');`}></div>}
+    <div class="container-edge relative z-10 text-bg">
+      <a href={`/${countrySlug}`} class="text-sm tracking-[0.3em] uppercase mb-4 inline-block fade-up-1 hover:text-accent transition-colors">
+        ← {countryName}
+      </a>
+      <h1 class="font-serif italic text-6xl md:text-7xl fade-up-2">{regionName}</h1>
+    </div>
+  </section>
+
+  {description && (
+    <section class="container-edge py-16 max-w-3xl">
+      <p class="text-lg text-ink-soft" data-reveal>{description}</p>
+    </section>
+  )}
+
+  <section class="container-edge py-16">
+    <div class="eyebrow mb-3" data-reveal>podróże</div>
+    <h2 class="section-title mb-12" data-reveal>w {regionName}</h2>
+    {trips.length === 0
+      ? <p class="text-ink-soft italic" data-reveal>Jeszcze brak podróży.</p>
+      : (
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+          {trips.map(t => <TripCard {...t} />)}
+        </div>
+      )}
+  </section>
+</Layout>

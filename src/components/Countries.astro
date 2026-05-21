@@ -1,0 +1,33 @@
+---
+import type { FallbackCountry } from '../lib/fallback';
+
+interface Props {
+  countries: FallbackCountry[];
+}
+const { countries } = Astro.props;
+const plural = (n: number) => {
+  if (n === 1) return 'podróż';
+  if (n >= 2 && n <= 4) return 'podróże';
+  return 'podróży';
+};
+---
+<section id="countries" class="container-edge py-32 relative z-10">
+  <div class="eyebrow mb-3" data-reveal>eksploruj</div>
+  <h2 class="section-title mb-16" data-reveal>według <span class="italic text-moss">kraju</span></h2>
+
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+    {countries.map(c => (
+      <a href={`/${c.slug}`} class="group relative aspect-[3/4] overflow-hidden block" data-reveal>
+        <div
+          class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105 brightness-[0.65] sepia-[0.2]"
+          style={`background-image: url('${c.cover}');`}
+        ></div>
+        <div class="absolute bottom-6 left-6 right-6 text-bg z-10">
+          <span class="text-2xl block mb-2">{c.flag}</span>
+          <div class="font-serif italic text-3xl mb-1">{c.name}</div>
+          <div class="text-xs tracking-[0.15em] uppercase opacity-85">{c.trips} {plural(c.trips)}</div>
+        </div>
+      </a>
+    ))}
+  </div>
+</section>

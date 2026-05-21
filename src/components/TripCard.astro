@@ -1,0 +1,25 @@
+---
+interface Props {
+  title: string;
+  slug: string;
+  excerpt?: string;
+  cover: string;
+  country?: string;
+  region?: string;
+  date?: string;
+}
+const { title, slug, excerpt, cover, country, region, date } = Astro.props;
+const fmt = date ? new Date(date).toLocaleDateString('pl-PL', { month: '2-digit', year: 'numeric' }) : '';
+---
+<a href={`/podroze/${slug}`} class="group block" data-reveal>
+  <div class="aspect-[3/4] w-full overflow-hidden bg-cover bg-center sepia-[0.1] saturate-[0.9] group-hover:sepia-0 group-hover:saturate-100 group-hover:scale-[1.02] transition-all duration-500 mb-5"
+    style={`background-image: url('${cover}');`}></div>
+  <div class="flex flex-wrap gap-x-3 gap-y-1 text-xs tracking-[0.15em] uppercase text-linen mb-2">
+    {country && <span>{country}</span>}
+    {country && region && <span>·</span>}
+    {region && <span>{region}</span>}
+    {fmt && <><span>·</span><span>{fmt}</span></>}
+  </div>
+  <h3 class="font-serif text-2xl leading-tight mb-2 group-hover:text-rust transition-colors">{title}</h3>
+  {excerpt && <p class="text-ink-soft">{excerpt}</p>}
+</a>

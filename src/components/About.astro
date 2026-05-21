@@ -1,0 +1,28 @@
+---
+interface Props {
+  name?: string;
+  bio?: string[];
+  signature?: string;
+  avatar?: string;
+}
+const {
+  name = 'Ania',
+  bio = [
+    'Od pięciu lat zapisuję każdą podróż — bilety, ślady GPX, ceny chleba na bazarach. Tu spisuję to wszystko zamiast gubić w notatkach telefonu.',
+    'Najczęściej Bałkany, Kaukaz i północ. Najchętniej autobusem, marszrutką, stopem.',
+  ],
+  signature = '— do zobaczenia w drodze',
+  avatar = 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&q=80',
+} = Astro.props;
+---
+<section id="about" class="bg-bg-2 py-32 px-6 relative z-10">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-20 max-w-[1300px] mx-auto items-center">
+    <div class="aspect-[4/5] bg-cover bg-center sepia-[0.15] saturate-[0.9]" style={`background-image: url('${avatar}');`} data-reveal></div>
+    <div data-reveal>
+      <div class="eyebrow mb-3">o mnie</div>
+      <h2 class="font-serif italic text-5xl mb-6 leading-tight">cześć, jestem <span class="text-rust">{name}</span></h2>
+      {bio.map(p => <p class="text-ink-soft text-lg mb-5">{p}</p>)}
+      <p class="font-serif italic text-rust text-xl mt-8">{signature}</p>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,36 @@
+---
+interface Props {
+  image: string;
+  title?: string;
+  titleAccent?: string;
+  subtitle?: string;
+  eyebrow?: string;
+}
+const {
+  image,
+  title = 'w drodze przez',
+  titleAccent = 'dzikie miejsca',
+  subtitle = 'notatki, zdjęcia i koszty z wędrówek po krajach mniej oczywistych.',
+  eyebrow = 'dziennik podróży · od 2021',
+} = Astro.props;
+---
+<section class="relative h-screen overflow-hidden flex items-center justify-center -mt-px">
+  <div
+    class="absolute inset-0 bg-cover bg-center animate-kenburns"
+    style={`background-image: url('${image}'); filter: brightness(0.7) sepia(0.15);`}
+  ></div>
+  <div class="relative z-10 text-center text-bg px-6">
+    <div class="text-sm tracking-[0.3em] uppercase mb-6 fade-up-1">{eyebrow}</div>
+    <h1 class="font-serif italic font-normal leading-[1.05] mb-8 fade-up-2" style="font-size: clamp(3rem, 8vw, 7rem);">
+      {title}<br /><span class="text-accent">{titleAccent}</span>
+    </h1>
+    <p class="text-lg max-w-[480px] mx-auto fade-up-3">{subtitle}</p>
+  </div>
+  <div class="absolute bottom-8 left-1/2 -translate-x-1/2 text-bg text-xs tracking-[0.2em] z-10 hero-bounce">
+    ↓ scroll
+  </div>
+</section>
+
+<style>
+  .hero-bounce { animation: bounce 2s infinite; }
+</style>

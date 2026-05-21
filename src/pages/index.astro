@@ -1,0 +1,82 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Hero from '../components/Hero.astro';
+import Stats from '../components/Stats';
+import LatestTrips from '../components/LatestTrips.astro';
+import MapTeaser from '../components/MapTeaser.astro';
+import Countries from '../components/Countries.astro';
+import About from '../components/About.astro';
+import Newsletter from '../components/Newsletter.astro';
+
+import { FALLBACK_TRIPS, FALLBACK_COUNTRIES, FALLBACK_STATS, FALLBACK_HERO } from '../lib/fallback';
+import { getLatestTrips, getAllCountries, getSiteSettings, getAuthor, assetUrl } from '../lib/contentful';
+
+// Try Contentful, fall back to mock data.
+const cfTrips = await getLatestTrips(6);
+const cfCountries = await getAllCountries();
+const settings = await getSiteSettings();
+const author = await getAuthor();
+
+const useFallback = !cfTrips.items?.length;
+
+const trips = useFallback ? FALLBACK_TRIPS : cfTrips.items.map((t: any) => {
+  const region = t.fields.region;
+  const country = region?.fields?.country;
+  return {
+    title: t.fields.title,
+    slug: t.fields.slug,
+    excerpt: t.fields.excerpt ?? '',
+    cover: assetUrl(t.fields.coverImage, { w: 1200 }),
+    country: country?.fields?.name ?? '',
+    countrySlug: country?.fields?.slug ?? '',
+    region: region?.fields?.name ?? '',
+    regionSlug: region?.fields?.slug ?? '',
+    date: t.fields.dateStart,
+    distanceKm: t.fields.distanceKm ?? 0,
+    costTotal: t.fields.costTotal ?? 0,
+    tags: t.fields.tags ?? [],
+    pin: [t.fields.pinLat ?? 0, t.fields.pinLng ?? 0] as [number, number],
+  };
+});
+
+const tripCountBySlug = new Map<string, number>();
+if (cfTrips.items?.length) {
+  for (const t of cfTrips.items as any[]) {
+    const cs = t.fields.region?.fields?.country?.fields?.slug;
+    if (cs) tripCountBySlug.set(cs, (tripCountBySlug.get(cs) ?? 0) + 1);
+  }
+}
+const countries = (cfCountries.items?.length && cfCountries.items.map((c: any) => ({
+  name: c.fields.name,
+  slug: c.fields.slug,
+  flag: c.fields.flagEmoji ?? '🏳️',
+  cover: assetUrl(c.fields.coverImage, { w: 800 }),
+  trips: tripCountBySlug.get(c.fields.slug) ?? 0,
+}))) || FALLBACK_COUNTRIES;
+
+const stats = settings ? {
+  countries: settings.fields.statCountries ?? FALLBACK_STATS.countries,
+  days: settings.fields.statDays ?? FALLBACK_STATS.days,
+  km: settings.fields.statKm ?? FALLBACK_STATS.km,
+} : FALLBACK_STATS;
+
+const hero = settings ? {
+  title: settings.fields.heroTitle ?? FALLBACK_HERO.title,
+  subtitle: settings.fields.heroSubtitle ?? FALLBACK_HERO.subtitle,
+  image: assetUrl(settings.fields.heroImage, { w: 2000 }) || FALLBACK_HERO.image,
+} : FALLBACK_HERO;
+---
+<Layout>
+  <Hero image={hero.image} subtitle={hero.subtitle} />
+  <Stats client:visible {...stats} />
+  <LatestTrips trips={trips.slice(0, 3)} />
+  <MapTeaser trips={trips} />
+  <Countries countries={countries} />
+  <About
+    name={author?.fields?.name as string | undefined}
+    bio={author?.fields?.bio ? [author.fields.bio as string] : undefined}
+    signature={author?.fields?.signature as string | undefined}
+    avatar={author?.fields?.avatar ? assetUrl(author.fields.avatar, { w: 800 }) : undefined}
+  />
+  <Newsletter />
+</Layout>

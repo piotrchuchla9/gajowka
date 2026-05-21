@@ -1,0 +1,18 @@
+---
+---
+<section class="bg-ink text-bg text-center py-24 px-6 relative z-10">
+  <h2 class="font-serif italic text-5xl mb-4">kolejna podróż<br/>za dwa tygodnie</h2>
+  <p class="opacity-70 mb-10 max-w-[500px] mx-auto">Newsletter raz w miesiącu. Trasy, koszty, błędy do uniknięcia. Bez spamu.</p>
+  <form class="flex flex-col sm:flex-row max-w-[480px] mx-auto gap-2" id="nl-form">
+    <input type="email" required placeholder="twój email" class="flex-1 px-5 py-4 border border-bg/20 bg-transparent text-bg placeholder:text-bg/40 font-sans text-base focus:outline-none focus:border-rust" />
+    <button type="submit" class="px-8 py-4 bg-rust text-bg font-serif italic text-base hover:bg-rust-dark transition-colors">zapisz mnie</button>
+  </form>
+</section>
+
+<script>
+  const f = document.getElementById('nl-form') as HTMLFormElement | null;
+  f?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    alert('Formularz w wersji finalnej (np. MailerLite). Mockup.');
+  });
+</script>

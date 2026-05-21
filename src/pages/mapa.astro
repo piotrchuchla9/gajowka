@@ -1,0 +1,35 @@
+---
+import Layout from '../layouts/Layout.astro';
+import WorldMap from '../components/WorldMap';
+import { getAllTrips, assetUrl } from '../lib/contentful';
+import { FALLBACK_TRIPS } from '../lib/fallback';
+
+const cf = await getAllTrips();
+const trips = cf.items?.length
+  ? cf.items.map((t: any) => ({
+      title: t.fields.title,
+      slug: t.fields.slug,
+      country: t.fields.region?.fields?.country?.fields?.name ?? '',
+      region: t.fields.region?.fields?.name ?? '',
+      lat: t.fields.pinLat ?? 0,
+      lng: t.fields.pinLng ?? 0,
+      cover: assetUrl(t.fields.coverImage, { w: 800 }),
+      date: t.fields.dateStart,
+    })).filter((t: any) => t.lat && t.lng)
+  : FALLBACK_TRIPS.map(t => ({
+      title: t.title, slug: t.slug, country: t.country, region: t.region,
+      lat: t.pin[0], lng: t.pin[1], cover: t.cover, date: t.date,
+    }));
+
+const maptilerKey = import.meta.env.PUBLIC_MAPTILER_KEY || '';
+---
+<Layout title="mapa">
+  <section class="container-edge pt-32 pb-8">
+    <div class="eyebrow mb-3">odwiedzone</div>
+    <h1 class="section-title">mapa <span class="italic text-moss">wszystkich tras</span></h1>
+    <p class="text-ink-soft mt-4 max-w-2xl">Każdy pin = jedna podróż. Kliknij żeby zobaczyć szczegóły.</p>
+  </section>
+  <section class="pb-16">
+    <WorldMap client:only="react" trips={trips} maptilerKey={maptilerKey} />
+  </section>
+</Layout>
